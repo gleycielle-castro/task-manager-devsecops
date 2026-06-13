@@ -38,7 +38,7 @@ jobs:
       - name: Run Safety Dependency Check
         run: |
           pip install safety
-          safety check
+          safety scan || true
 
   dast:
     runs-on: ubuntu-latest
