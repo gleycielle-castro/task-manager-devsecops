@@ -38,23 +38,36 @@ def login():
         return redirect(url_for('all_tasks'))
 
     form = LoginForm()
-    # After you submit the form
+
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        # Check if the user exists and the password is valid
+
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
-            task_form = TaskForm()
+
+            app.logger.info(
+                f'LOGIN_SUCCESS user={user.username}'
+            )
+
             flash('Login Successfull', 'success')
             return redirect(url_for('all_tasks'))
+
         else:
+            app.logger.warning(
+                f'LOGIN_FAILED username={form.username.data}'
+            )
+
             flash('Login Unsuccessful. Please check Username Or Password', 'danger')
-    
+
     return render_template('login.html', title='Login', form=form)
-    
+ 
 
 @app.route("/logout")
 def logout():
+    app.logger.info(
+        f'LOGOUT user={current_user.username}'
+    )
+
     logout_user()
     return redirect(url_for('login'))
 
@@ -91,6 +104,10 @@ def add_task():
         task = Task(content=form.task_name.data, author=current_user)
         db.session.add(task)
         db.session.commit()
+
+        app.logger.info(
+            f'TASK_CREATED user={current_user.username} task="{task.content}"'
+        )
         flash('Task Created', 'success')
         return redirect(url_for('add_task'))
     return render_template('add_task.html', form=form, title='Add Task')
@@ -103,12 +120,17 @@ def update_task(task_id):
     form = UpdateTaskForm()
     if form.validate_on_submit():
         if form.task_name.data != task.content:
+
+            old_content = task.content
+
             task.content = form.task_name.data
             db.session.commit()
+
+            app.logger.info(
+                f'TASK_UPDATED user={current_user.username} old="{old_content}" new="{task.content}"'
+            )
+
             flash('Task Updated', 'success')
-            return redirect(url_for('all_tasks'))
-        else:
-            flash('No Changes Made', 'warning')
             return redirect(url_for('all_tasks'))
     elif request.method == 'GET':
         form.task_name.data = task.content
@@ -119,6 +141,9 @@ def update_task(task_id):
 @login_required
 def delete_task(task_id):
     task = Task.query.get_or_404(task_id)
+    app.logger.info(
+       f'TASK_DELETED user={current_user.username} task="{task.content}"'
+)
     db.session.delete(task)
     db.session.commit()
     flash('Task Deleted', 'info')
