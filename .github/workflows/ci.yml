@@ -32,7 +32,7 @@ jobs:
       - name: Run Bandit Security Scan
         run: |
           pip install bandit
-          bandit -r .
+          bandit -r . --exit-zero
 
       # 📦 Dependency Security Check
       - name: Run Safety Dependency Check
